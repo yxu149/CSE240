@@ -1,5 +1,11 @@
 import numpy as np
 
+EMPTY = 0
+DEPTH = 5
+
+ROW_MAX = 6
+COLUMN_MAX = 7
+
 
 class AIPlayer:
     def __init__(self, player_number):

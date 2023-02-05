@@ -1,3 +1,5 @@
+import random
+
 import numpy as np
 
 # Global Constants
@@ -33,14 +35,10 @@ class AIPlayer:
         RETURNS:
         The 0 based index of the column that represents the next move
         """
-        valid_cols = []
-        for i, col in enumerate(board.T):
-            if 0 in col:
-                valid_cols.append(i)
+        alpha = 0
+        beta = 0
 
-        move =
-
-        return move
+        return self.minimax_value(board, DEPTH, alpha, beta, True)[0]
 
     def get_expectimax_move(self, board):
         """
@@ -63,7 +61,10 @@ class AIPlayer:
         RETURNS:
         The 0 based index of the column that represents the next move
         """
-        raise NotImplementedError('Whoops I don\'t know what to do')
+        alpha = 0
+        beta = 0
+
+        return self.minimax_value(board, DEPTH, alpha, beta, True)[0]
 
     def evaluation_function(self, board):
         """
@@ -83,8 +84,233 @@ class AIPlayer:
         RETURNS:
         The utility value for the current board
         """
+        player = self.get_player_num()
+        if player == 1:
+            opponent = 2
+        else:
+            opponent = 1
 
-        return 0
+        return self.eval_frame(board, player, opponent)
+
+    """
+    Helper Functions
+    """
+
+    def get_player_num(self):
+        return self.player_number
+
+    def minimax_value(self, state, depth, alpha, beta, is_max_player):
+        player = self.get_player_num()
+        if player == 1:
+            opponent = 2
+        else:
+            opponent = 1
+
+        if depth == 0 or self.is_terminal_node(state, player) or self.is_terminal_node(state, opponent):
+            if self.is_terminal_node(state, player) or self.is_terminal_node(state, opponent):
+                if self.is_winning_move(state, player):
+                    return None, 9999
+                elif self.is_winning_move(state, opponent):
+                    return None, -9999
+                else:
+                    return None, 0
+
+        if is_max_player:
+            val = -np.inf
+            valid_cols = self.get_valid_cols(state)
+            move = random.choice(valid_cols)
+            for col in valid_cols:
+                row = self.get_row(state, col, player)
+                new_state = state.copy()
+                new_state[row][col] = player
+                new_val = self.minimax_value(new_state, depth - 1, alpha, beta, False)[1]
+                if new_val > val:
+                    val = new_val
+                    move = col
+                alpha = max(alpha, val)
+                if alpha >= beta:
+                    break
+            return move, val
+        else:
+            val = np.inf
+            valid_cols = self.get_valid_cols(state)
+            move = random.choice(valid_cols)
+            for col in valid_cols:
+                row = self.get_row(state, col, opponent)
+                new_state = state.copy()
+                new_state[row][col] = opponent
+                new_val = self.minimax_value(new_state, depth - 1, alpha, beta, True)[1]
+                if new_val < val:
+                    val = new_val
+                    move = col
+                beta = min(beta, val)
+                if beta >= alpha:
+                    break
+            return move, val
+
+    def expectimax_value(self, state, depth, alpha, beta, is_max_player):
+        player = self.get_player_num()
+        if player == 1:
+            opponent = 2
+        else:
+            opponent = 1
+
+        if depth == 0 or self.is_terminal_node(state, player) or self.is_terminal_node(state, opponent):
+            if self.is_terminal_node(state, player) or self.is_terminal_node(state, opponent):
+                if self.is_winning_move(state, player):
+                    return None, 9999
+                elif self.is_winning_move(state, opponent):
+                    return None, -9999
+                else:
+                    return None, 0
+
+        if is_max_player:
+            val = -np.inf
+            valid_cols = self.get_valid_cols(state)
+            move = random.choice(valid_cols)
+            for col in valid_cols:
+                row = self.get_row(state, col, player)
+                new_state = state.copy()
+                new_state[row][col] = player
+                new_val = self.minimax_value(new_state, depth - 1, alpha, beta, False)[1]
+                if new_val > val:
+                    val = new_val
+                    move = col
+                alpha = max(alpha, val)
+                if alpha >= beta:
+                    break
+            return move, val
+        else:
+            val = 0
+            valid_cols = self.get_valid_cols(state)
+            move = random.choice(valid_cols)
+            for col in valid_cols:
+                row = self.get_row(state, col, opponent)
+                new_state = state.copy()
+                new_state[row][col] = opponent
+                prob = 1/len(valid_cols)
+
+                new_val = self.minimax_value(new_state, depth - 1, alpha, beta, True)[1] * prob
+                if new_val < val:
+                    val = new_val
+                    move = col
+                beta = min(beta, val)
+                if beta >= alpha:
+                    break
+            return move, val
+
+
+    def get_valid_cols(self, board):
+        """
+        Given board, return columns that are valid to
+        drop new pieces into
+        Args:
+            board: The game board
+
+        Returns:
+            cols: Valid columns to drop new pieces into
+
+        """
+        cols = []
+        for i, col in enumerate(board.T):
+            if 0 in col:
+                cols.append(i)
+
+        return cols
+
+    def is_winning_move(self, board, player):
+        """
+        Local estimator of whether this move is the
+        one that will win player the game or not.
+        Intentional written differently from the
+        game_complete function in ConnectFour.py
+        to mimic human thinking behaviour
+        Args:
+            board: The game board
+            player: The player playing when function
+            is called
+
+        Returns:
+            a boolean value of whether player given
+            will be making a winning move or not
+
+        """
+        # Check for horizontal wins
+        for c in range(COLUMN_MAX - 3):
+            for r in range(ROW_MAX):
+                if board[r][c] == player \
+                        and board[r][c + 1] == player \
+                        and board[r][c + 2] == player \
+                        and board[r][c + 3] == player:
+                    return True
+        # Check for vertical wins
+        for c in range(COLUMN_MAX):
+            for r in range(ROW_MAX - 3):
+                if board[r][c] == player \
+                        and board[r + 1][c] == player \
+                        and board[r + 2][c] == player \
+                        and board[r + 3][c] == player:
+                    return True
+        # Check for ↗ wins
+        for c in range(COLUMN_MAX - 3):
+            for r in range(ROW_MAX - 3):
+                if board[r][c] == player \
+                        and board[r + 1][c + 1] == player \
+                        and board[r + 2][c + 2] == player \
+                        and board[r + 3][c + 3] == player:
+                    return True
+        # Check for ↘ wins
+        for c in range(COLUMN_MAX - 3):
+            for r in range(ROW_MAX - 3):
+                if board[r][c] == player \
+                        and board[r - 1][c + 1] == player \
+                        and board[r - 2][c + 2] == player \
+                        and board[r - 3][c + 3] == player:
+                    return True
+
+    def is_terminal_node(self, board, player):
+        """
+        Is the last node of branch. No more successors.
+        Args:
+            board: The game board
+            player: The player playing when function
+            is called
+
+        Returns:
+            a boolean value of whether this node
+            has further successors
+        """
+        return self.is_winning_move(board, player) or len(self.get_valid_cols(board)) == 0
+
+    def get_row(self, board, col, player):
+        """
+        Simulate a piece dropping into the board
+        Args:
+            board: The game board
+            col: Column to drop piece into
+            player: The player dropping the piece
+
+        Returns:
+            The row number this dropped piece will end up
+        """
+        for r in range(ROW_MAX):
+            if board[r][col] is EMPTY:
+                return r
+
+        return None
+
+    def eval_frame(self, state, player, opponent):
+        score = 0
+        if state.count(player) == 4:
+            score += 100
+        elif state.count(player) == 3 and state.count(EMPTY) == 1:
+            score += 5
+        elif state.count(player) == 2 and state.count(EMPTY) == 2:
+            score += 2
+        if state.count(opponent) == 3 and state.count(EMPTY) == 1:
+            score -= 4
+
+        return score
 
 
 class RandomPlayer:
@@ -155,145 +381,3 @@ class HumanPlayer:
             move = int(input('Enter your move: '))
 
         return move
-
-
-"""
-Helper Functions
-"""
-
-
-def max_val(state, alpha, beta):
-    """
-    Max-value function for alpha beta AI
-    
-    Args:
-        state:  
-        alpha: MAX's best option on path to root
-        beta: MIN's best option on path to root 
-
-    Returns:
-        object: value
-    """
-
-    v = float(-np.inf)
-    for successor in state:
-        v = max(v, value(successor, alpha, beta, True))
-        if v >= beta:
-            return v
-        alpha = max(alpha, v)
-    return v
-
-
-def min_val(state, alpha, beta):
-    """
-    Min-value function for alpha beta AI
-
-    Args:
-        state:  
-        alpha: MAX's best option on path to root
-        beta: MIN's best option on path to root 
-
-    Returns:
-        object: value
-    """
-    v = float(np.inf)
-    for successor in state:
-        v = min(v, value(successor, alpha, beta, False))
-        if v <= alpha:
-            return v
-        beta = min(beta, v)
-    return v
-
-
-def value(state, alpha, beta, is_max_player):
-    if depth == 0 or is_terminal_node(board, player):
-        return
-    if is_max_player:
-        max_val(state, alpha, beta)
-    else:
-        min_val(state,alpha, beta)
-    return v
-
-
-def get_valid_cols(board):
-    """
-    Given board, return columns that are valid to
-    drop new pieces into
-    Args:
-        board: The game board
-
-    Returns:
-        cols: Valid columns to drop new pieces into
-
-    """
-    cols = []
-    for i, col in enumerate(board.T):
-        if 0 in col:
-            cols.append(i)
-
-    return cols
-
-
-def is_winning_move(board, player):
-    """
-    Local estimator of whether this move is the
-    one that will win player the game or not.
-    Intentional written differently from the
-    game_complete function in ConnectFour.py
-    to mimic human thinking behaviour
-    Args:
-        board: The game board
-        player: The player playing when function
-        is called
-
-    Returns:
-        a boolean value of whether player given
-        will be making a winning move or not
-
-    """
-    # Check for horizontal wins
-    for c in range(COLUMN_MAX - 3):
-        for r in range(ROW_MAX):
-            if board[r][c] == player \
-            and board[r][c+1] == player \
-            and board[r][c+2] == player \
-            and board[r][c+3] == player:
-                return True
-    # Check for vertical wins
-    for c in range(COLUMN_MAX):
-        for r in range(ROW_MAX - 3):
-            if board[r][c] == player \
-            and board[r+1][c] == player \
-            and board[r+2][c] == player \
-            and board[r+3][c] == player:
-                return True
-    # Check for ↗ wins
-    for c in range(COLUMN_MAX - 3):
-        for r in range(ROW_MAX - 3):
-            if board[r][c] == player \
-            and board[r+1][c+1] == player \
-            and board[r+2][c+2] == player \
-            and board[r+3][c+3] == player:
-                return True
-    # Check for ↘ wins
-    for c in range(COLUMN_MAX - 3):
-        for r in range(ROW_MAX - 3):
-            if board[r][c] == player \
-            and board[r-1][c+1] == player \
-            and board[r-2][c+2] == player \
-            and board[r-3][c+3] == player:
-                return True
-
-def is_terminal_node(board, player):
-    """
-    Is the last node of branch. No more successors.
-    Args:
-        board: The game board
-        player: The player playing when function
-        is called
-
-    Returns:
-        a boolean value of whether this node
-        has further successors
-    """
-    return is_winning_move(board, player) or len(get_valid_cols(board)) == 0

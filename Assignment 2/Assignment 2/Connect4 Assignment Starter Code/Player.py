@@ -1,8 +1,8 @@
 import numpy as np
 
+# Global Constants
 EMPTY = 0
 DEPTH = 5
-
 ROW_MAX = 6
 COLUMN_MAX = 7
 
@@ -33,7 +33,14 @@ class AIPlayer:
         RETURNS:
         The 0 based index of the column that represents the next move
         """
-        raise NotImplementedError('Whoops I don\'t know what to do')
+        valid_cols = []
+        for i, col in enumerate(board.T):
+            if 0 in col:
+                valid_cols.append(i)
+
+        move =
+
+        return move
 
     def get_expectimax_move(self, board):
         """
@@ -148,3 +155,145 @@ class HumanPlayer:
             move = int(input('Enter your move: '))
 
         return move
+
+
+"""
+Helper Functions
+"""
+
+
+def max_val(state, alpha, beta):
+    """
+    Max-value function for alpha beta AI
+    
+    Args:
+        state:  
+        alpha: MAX's best option on path to root
+        beta: MIN's best option on path to root 
+
+    Returns:
+        object: value
+    """
+
+    v = float(-np.inf)
+    for successor in state:
+        v = max(v, value(successor, alpha, beta, True))
+        if v >= beta:
+            return v
+        alpha = max(alpha, v)
+    return v
+
+
+def min_val(state, alpha, beta):
+    """
+    Min-value function for alpha beta AI
+
+    Args:
+        state:  
+        alpha: MAX's best option on path to root
+        beta: MIN's best option on path to root 
+
+    Returns:
+        object: value
+    """
+    v = float(np.inf)
+    for successor in state:
+        v = min(v, value(successor, alpha, beta, False))
+        if v <= alpha:
+            return v
+        beta = min(beta, v)
+    return v
+
+
+def value(state, alpha, beta, is_max_player):
+    if depth == 0 or is_terminal_node(board, player):
+        return
+    if is_max_player:
+        max_val(state, alpha, beta)
+    else:
+        min_val(state,alpha, beta)
+    return v
+
+
+def get_valid_cols(board):
+    """
+    Given board, return columns that are valid to
+    drop new pieces into
+    Args:
+        board: The game board
+
+    Returns:
+        cols: Valid columns to drop new pieces into
+
+    """
+    cols = []
+    for i, col in enumerate(board.T):
+        if 0 in col:
+            cols.append(i)
+
+    return cols
+
+
+def is_winning_move(board, player):
+    """
+    Local estimator of whether this move is the
+    one that will win player the game or not.
+    Intentional written differently from the
+    game_complete function in ConnectFour.py
+    to mimic human thinking behaviour
+    Args:
+        board: The game board
+        player: The player playing when function
+        is called
+
+    Returns:
+        a boolean value of whether player given
+        will be making a winning move or not
+
+    """
+    # Check for horizontal wins
+    for c in range(COLUMN_MAX - 3):
+        for r in range(ROW_MAX):
+            if board[r][c] == player \
+            and board[r][c+1] == player \
+            and board[r][c+2] == player \
+            and board[r][c+3] == player:
+                return True
+    # Check for vertical wins
+    for c in range(COLUMN_MAX):
+        for r in range(ROW_MAX - 3):
+            if board[r][c] == player \
+            and board[r+1][c] == player \
+            and board[r+2][c] == player \
+            and board[r+3][c] == player:
+                return True
+    # Check for ↗ wins
+    for c in range(COLUMN_MAX - 3):
+        for r in range(ROW_MAX - 3):
+            if board[r][c] == player \
+            and board[r+1][c+1] == player \
+            and board[r+2][c+2] == player \
+            and board[r+3][c+3] == player:
+                return True
+    # Check for ↘ wins
+    for c in range(COLUMN_MAX - 3):
+        for r in range(ROW_MAX - 3):
+            if board[r][c] == player \
+            and board[r-1][c+1] == player \
+            and board[r-2][c+2] == player \
+            and board[r-3][c+3] == player:
+                return True
+
+def is_terminal_node(board, player):
+    """
+    Is the last node of branch. No more successors.
+    Args:
+        board: The game board
+        player: The player playing when function
+        is called
+
+    Returns:
+        a boolean value of whether this node
+        has further successors
+    """
+    return is_winning_move(board, player) or len(get_valid_cols(board)) == 0

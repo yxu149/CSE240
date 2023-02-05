@@ -4,7 +4,7 @@ import numpy as np
 
 # Global Constants
 EMPTY = 0
-DEPTH = 5
+DEPTH = 20
 ROW_MAX = 6
 COLUMN_MAX = 7
 
@@ -64,7 +64,7 @@ class AIPlayer:
         alpha = 0
         beta = 0
 
-        return self.minimax_value(board, DEPTH, alpha, beta, True)[0]
+        return self.expectimax_value(board, DEPTH, alpha, beta, True)[0]
 
     def evaluation_function(self, board):
         """
@@ -144,7 +144,7 @@ class AIPlayer:
                     val = new_val
                     move = col
                 beta = min(beta, val)
-                if beta >= alpha:
+                if alpha >= beta:
                     break
             return move, val
 
@@ -195,7 +195,7 @@ class AIPlayer:
                     val = new_val
                     move = col
                 beta = min(beta, val)
-                if beta >= alpha:
+                if alpha >= beta:
                     break
             return move, val
 
@@ -293,23 +293,22 @@ class AIPlayer:
         Returns:
             The row number this dropped piece will end up
         """
-        for r in range(ROW_MAX):
-            if board[r][col] is EMPTY:
-                return r
+        for row in range(0, 6, 1): 
+            if board[row][col] == 0: 
+                return row
 
         return None
 
     def eval_frame(self, state, player, opponent):
         score = 0
         if state.count(player) == 4:
-            score += 100
+            score += 3000
         elif state.count(player) == 3 and state.count(EMPTY) == 1:
-            score += 5
+            score += 1500
         elif state.count(player) == 2 and state.count(EMPTY) == 2:
-            score += 2
+            score += 1000
         if state.count(opponent) == 3 and state.count(EMPTY) == 1:
-            score -= 4
-
+            score -= 2000
         return score
 
 

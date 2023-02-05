@@ -301,13 +301,15 @@ class AIPlayer:
 
     def eval_frame(self, state, player, opponent):
         score = 0
+        if self.is_winning_move(state, player):
+            score += 10000
         if state.count(player) == 4:
             score += 3000
-        elif state.count(player) == 3 and state.count(EMPTY) == 1:
+        elif state.count(player) == 3 and state.count(0) == 1:
             score += 1500
-        elif state.count(player) == 2 and state.count(EMPTY) == 2:
+        elif state.count(player) == 2 and state.count(0) == 2:
             score += 1000
-        if state.count(opponent) == 3 and state.count(EMPTY) == 1:
+        if state.count(opponent) == 3 and state.count(0) == 1:
             score -= 2000
         return score
 

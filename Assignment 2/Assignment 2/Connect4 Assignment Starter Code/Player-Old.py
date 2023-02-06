@@ -4,7 +4,7 @@ import numpy as np
 
 # Global Constants
 EMPTY = 0
-DEPTH = 20
+DEPTH = 10
 ROW_MAX = 6
 COLUMN_MAX = 7
 

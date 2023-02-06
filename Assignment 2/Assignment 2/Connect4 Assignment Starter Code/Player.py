@@ -50,10 +50,10 @@ class AIPlayer:
             select_moves.append([alpha, col])
             frame[row][col] = 0
 
-        print("Alpha", alpha, "Beta", beta)
-        print("AB Select Moves", select_moves)
         best = max(select_moves, key=lambda x: x[0])
-        print("AB Best", best)
+        """print("Alpha", alpha, "Beta", beta)
+        print("AB Select Moves", select_moves)
+        print("AB Best", best)"""
         return best[1]
 
     def alphabeta_max_value(self, board, alpha, beta, player, opponent, depth):
@@ -75,7 +75,7 @@ class AIPlayer:
         frame = board.copy()
         valid_moves = self.get_valid_cols(frame)
 
-        if depth >= MAX_DEPTH or not valid_moves:
+        if depth >= MAX_DEPTH or len(valid_moves) == 0:
             return self.evaluation_function(frame)
 
         for col in valid_moves:
@@ -113,7 +113,7 @@ class AIPlayer:
         frame = board.copy()
         valid_moves = self.get_valid_cols(frame)
 
-        if depth >= MAX_DEPTH or not valid_moves:
+        if depth >= MAX_DEPTH or len(valid_moves) == 0:
             return self.evaluation_function(frame)
 
         for col in valid_moves:
@@ -124,10 +124,10 @@ class AIPlayer:
             max_val = self.alphabeta_max_value(frame, alpha, beta, player, opponent, depth)
             min_val = min(min_val, max_val)
 
-            if min_val <= alpha:
+            if min_val >= alpha:
                 return min_val
 
-            beta = min(beta, min_val)
+            beta = min(min_val, beta)
             frame[row][col] = 0
 
         return min_val
@@ -161,9 +161,9 @@ class AIPlayer:
         frame = board.copy()
         select_moves = self.exp_value(frame, alpha, player, opponent, depth)
         best = max(select_moves, key=lambda x: x[0])
-        print("Alpha", alpha)
+        """print("Alpha", alpha)
         print("Expectimax Select Moves", select_moves)
-        print("Expectimax Best", best)
+        print("Expectimax Best", best)"""
         return best[1]
 
     def exp_value(self, board, alpha, player, opponent, depth):
@@ -207,7 +207,7 @@ class AIPlayer:
         max_val = -np.inf
         frame = board.copy()
         moves = self.get_valid_cols(frame)
-        if depth >= MAX_DEPTH or not moves:
+        if depth >= MAX_DEPTH or len(moves) == 0:
             return self.evaluation_function(frame)
 
         for col in moves:
@@ -235,7 +235,7 @@ class AIPlayer:
         min_val = 0
         frame = board.copy()
         moves = self.get_valid_cols(frame)
-        if depth >= MAX_DEPTH or not moves:
+        if depth >= MAX_DEPTH or len(moves) == 0:
             return self.evaluation_function(frame)
 
         prob = 1 / len(moves)
@@ -300,7 +300,7 @@ class AIPlayer:
                 frame = [board[row-i][col-i] for i in range(4)]
                 score += self.eval_frame(frame, player, opponent)
 
-        print("Score", score)
+        #print("Score", score)
         return score
 
     def eval_frame(self, frame, player, opponent):

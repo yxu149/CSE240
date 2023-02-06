@@ -5,6 +5,15 @@ import numpy as np
 # Global Constants
 MAX_DEPTH = 7
 
+"""
+Credits: 
+Sijia Zhong (szhong14) for talking about and helping me 
+on the process of completing this assignment. No codes
+were shared directly as per requirement. 
+
+eval_frame() was partly inspired by Keith Galli, for details 
+see comment inside eval_frame() 
+"""
 
 class AIPlayer:
     def __init__(self, player_number):
@@ -280,23 +289,23 @@ class AIPlayer:
         # Check for horizontal wins
         for row in range(0, 6):
             row_arr = [int(i) for i in list(board[row,:])]
-            for col in range(0, 7-3):
+            for col in range(0, 4):
                 frame = row_arr[col:col+4]
                 score += self.eval_frame(frame, player, opponent)
         # Check for vertical wins
         for col in range(0, 7):
             col_arr = [int(i) for i in list(board[:, col])]
-            for row in range(0, 6-3):
+            for row in range(0, 3):
                 frame = col_arr[row:row+4]
                 score += self.eval_frame(frame, player, opponent)
         # Check for ↗ wins
-        for row in range(0, 6-3):
+        for row in range(0, 3):
             for col in range(0, 7-3):
                 frame = [board[row+i][col+i] for i in range(4)]
                 score += self.eval_frame(frame, player, opponent)
         # Check for ↘ wins
-        for row in range(0, 6-3):
-            for col in range(0, 7-3):
+        for row in range(0, 3):
+            for col in range(0, 4):
                 frame = [board[row+3-i][col+1] for i in range(4)]
                 score += self.eval_frame(frame, player, opponent)
 

@@ -3,10 +3,7 @@ import random
 import numpy as np
 
 # Global Constants
-EMPTY = 0
-DEPTH = 20
-ROW_MAX = 6
-COLUMN_MAX = 7
+MAX_DEPTH = 5
 
 
 class AIPlayer:
@@ -35,10 +32,105 @@ class AIPlayer:
         RETURNS:
         The 0 based index of the column that represents the next move
         """
-        alpha = 0
-        beta = 0
+        alpha = -np.inf
+        beta = np.inf
+        depth = 0
 
-        return self.minimax_value(board, DEPTH, alpha, beta, True)[0]
+        player = self.player_number
+        opponent = self.get_opponent(player)
+
+        frame = board.copy()
+        moves = self.get_valid_cols(frame)
+        select_moves = []
+        for col in moves:
+            row = self.get_valid_row(frame, col)
+            frame[row][col] = player
+            depth += 1
+            alpha = max(alpha, self.alphabeta_min_value(frame, alpha, beta, player, opponent, depth))
+            select_moves.append([alpha, col])
+            frame[row][col] = 0
+
+        print("Alpha", alpha, "Beta", beta)
+        print("AB Select Moves", select_moves)
+        best = max(select_moves, key=lambda x: x[0])
+        print("AB Best", best)
+        return best[1]
+
+    def alphabeta_max_value(self, board, alpha, beta, player, opponent, depth):
+        """
+        Alpha Beta Search Max-Value function
+        Args:
+            board: A copy of the current game board
+            alpha: The best path to root for MAX
+            beta: The best path to root for MIN
+            player: Current player playing, i.e. MAX player
+            opponent: The other player, i.e. MIN player
+            depth: Recursion depth control variable
+
+        Returns:
+            An estimated maximum score given the current freeze-frame of the game board
+
+        """
+        max_val = -np.inf
+        frame = board.copy()
+        valid_moves = self.get_valid_cols(frame)
+
+        if depth >= MAX_DEPTH or not valid_moves:
+            return self.evaluation_function(frame)
+
+        for col in valid_moves:
+            row = self.get_valid_row(frame, col)
+            frame[row][col] = player
+            depth += 1
+
+            min_val = self.alphabeta_min_value(frame, alpha, beta, player, opponent, depth)
+            max_val = max(max_val, min_val)
+
+            if max_val >= beta:
+                return max_val
+
+            alpha = max(alpha, max_val)
+            frame[row][col] = 0
+
+        return max_val
+
+    def alphabeta_min_value(self, board, alpha, beta, player, opponent, depth):
+        """
+        Alpha Beta Search Min-Value function
+        Args:
+            board: A copy of the current game board
+            alpha: The best path to root for MAX
+            beta: The best path to root for MIN
+            player: Current player playing, i.e. MAX player
+            opponent: The other player, i.e. MIN player
+            depth: Recursion depth control variable
+
+        Returns:
+            An estimated minimum score given the current freeze-frame of the game board
+
+        """
+        min_val = np.inf
+        frame = board.copy()
+        valid_moves = self.get_valid_cols(frame)
+
+        if depth >= MAX_DEPTH or not valid_moves:
+            return self.evaluation_function(frame)
+
+        for col in valid_moves:
+            row = self.get_valid_row(frame, col)
+            frame[row][col] = opponent
+            depth += 1
+
+            max_val = self.alphabeta_max_value(frame, alpha, beta, player, opponent, depth)
+            min_val = min(min_val, max_val)
+
+            if min_val <= alpha:
+                return min_val
+
+            beta = min(beta, min_val)
+            frame[row][col] = 0
+
+        return min_val
 
     def get_expectimax_move(self, board):
         """
@@ -61,10 +153,101 @@ class AIPlayer:
         RETURNS:
         The 0 based index of the column that represents the next move
         """
-        alpha = 0
-        beta = 0
+        alpha = -np.inf
+        player = self.player_number
+        opponent = self.get_opponent(player)
+        depth = 0
 
-        return self.expectimax_value(board, DEPTH, alpha, beta, True)[0]
+        frame = board.copy()
+        select_moves = self.exp_value(frame, alpha, player, opponent, depth)
+        best = max(select_moves, key=lambda x: x[0])
+        print("Alpha", alpha)
+        print("Expectimax Select Moves", select_moves)
+        print("Expectimax Best", best)
+        return best[1]
+
+    def exp_value(self, board, alpha, player, opponent, depth):
+        """
+        Expectimax value function. Drives the max and min functions.
+        Args:
+            board: The current game board
+            alpha: MAX path to root
+            player: MAX player
+            opponent: MIN player
+            depth: Recursion depth control variable
+
+        Returns:
+            Estimated best column to drop piece into
+        """
+        select_moves = []
+        frame = board.copy()
+        moves = self.get_valid_cols(frame)
+        for col in moves:
+            row = self.get_valid_row(frame, col)
+            frame[row][col] = player
+            depth += 1
+            alpha = max(alpha, self.expmax_value(frame, player, opponent, depth))
+            select_moves.append([alpha, col])
+            frame[row][col] = 0
+
+        return select_moves
+
+    def expmax_value(self, board, player, opponent, depth):
+        """
+        Expectimax maximum value function. Similar to alphabeta_max_value.
+        Args:
+            board: A freeze-frame of the current game board
+            player: MAX player
+            opponent: MIN player
+            depth: Recursion depth control variable
+
+        Returns:
+            An estimated value of this path to root
+        """
+        max_val = -np.inf
+        frame = board.copy()
+        moves = self.get_valid_cols(frame)
+        if depth >= MAX_DEPTH or not moves:
+            return self.evaluation_function(frame)
+
+        for col in moves:
+            row = self.get_valid_row(frame, col)
+            frame[row][col] = player
+            depth += 1
+            min_val = self.expmin_value(frame, player, opponent, depth)
+            max_val = max(max_val, min_val)
+            frame[row][col] = 0
+
+        return max_val
+
+    def expmin_value(self, board, player, opponent, depth):
+        """
+        Expectimax minimum value function
+        Args:
+            board: A freeze-frame of the current game board
+            player: Current player playing, i.e. MAX player
+            opponent: The evil player, i.e. MIN player
+            depth: Recursion depth control variable
+
+        Returns:
+            An estimated value of this path to root
+        """
+        min_val = 0
+        frame = board.copy()
+        moves = self.get_valid_cols(frame)
+        if depth >= MAX_DEPTH or not moves:
+            return self.evaluation_function(frame)
+
+        prob = 1 / len(moves)
+        for col in moves:
+            row = self.get_valid_row(frame, col)
+            frame[row][col] = opponent
+            depth += 1
+            max_val = self.expmax_value(frame, player, opponent, depth)
+            min_val += max_val * prob
+            frame[row][col] = 0
+
+        return min_val
 
     def evaluation_function(self, board):
         """
@@ -84,124 +267,94 @@ class AIPlayer:
         RETURNS:
         The utility value for the current board
         """
-        player = self.get_player_num()
-        if player == 1:
-            opponent = 2
-        else:
-            opponent = 1
+        player = self.player_number
+        opponent = self.get_opponent(player)
+        score = 0
 
-        return self.eval_frame(board, player, opponent)
+        """
+        Following code has been inspired by 
+        https://github.com/KeithGalli/Connect4-Python
+        and associated YouTube video 
+        https://www.youtube.com/watch?v=MMLtza3CZFM
+        """
+        # Check for horizontal wins
+        for row in range(0, 6):
+            row_arr = [int(i) for i in list(board[row,:])]
+            for col in range(0, 7-3):
+                frame = row_arr[col:col+4]
+                score += self.eval_frame(frame, player, opponent)
+        # Check for vertical wins
+        for col in range(0, 7):
+            col_arr = [int(i) for i in list(board[:, col])]
+            for row in range(0, 6-3):
+                frame = col_arr[row:row+4]
+                score += self.eval_frame(frame, player, opponent)
+        # Check for ↗ wins
+        for row in range(3, 6):
+            for col in range(0, 7-3):
+                frame = [board[row-i][col+i] for i in range(4)]
+                score += self.eval_frame(frame, player, opponent)
+        # Check for ↘ wins
+        for row in range(3, 6):
+            for col in range(0, 7):
+                frame = [board[row-i][col-i] for i in range(4)]
+                score += self.eval_frame(frame, player, opponent)
+
+        print("Score", score)
+        return score
+
+    def eval_frame(self, frame, player, opponent):
+        """
+        Count up the score on this freeze-frame of the game board for
+        player given.
+        Args:
+            frame: Freeze-frame of game board
+            player: MAX player
+            opponent: MIN player
+
+        Returns:
+            An estimated score
+
+        """
+        score = 0
+
+        if frame.count(player) == 4:
+            score += 100
+        elif frame.count(player) == 3 and frame.count(0) == 1:
+            score += 69
+        elif frame.count(player) == 2 and frame.count(0) == 2:
+            score += 30
+        elif frame.count(player) == 1 and frame.count(0) == 3:
+            score += 5
+
+        if frame.count(opponent) == 4:
+            score -= 95
+        elif frame.count(opponent) == 3 and frame.count(0) == 1:
+            score -= 80
+        elif frame.count(opponent) == 2 and frame.count(0) == 2:
+            score -= 30
+        elif frame.count(opponent) == 1 and frame.count(0) == 3:
+            score -= 5
+
+        return score
 
     """
     Helper Functions
     """
 
-    def get_player_num(self):
-        return self.player_number
+    def get_opponent(self, player):
+        """
+        Gives you the player number of your opponent
+        Args:
+            player: current player number
 
-    def min_value(self, state, depth, alpha, beta):
-        player = self.get_player_num()
+        Returns:
+            the other player number available, i.e. opponent's player number
+        """
         if player == 1:
-            opponent = 2
+            return 2
         else:
-            opponent = 1
-
-        if depth == 0 or self.is_terminal_node(state, opponent) or self.is_terminal_node(state, player):
-            if self.is_winning_move(state, opponent):
-                return None, 9999
-            elif self.is_winning_move(state, player):
-                return None, -9999
-            else:
-                return None, 0
-
-        val = np.inf
-        valid_cols = self.get_valid_cols(state)
-        move = random.choice(valid_cols)
-        for col in valid_cols:
-            row = self.get_row(state, col, opponent)
-            new_state = state.copy()
-            new_state[row][col] = opponent
-            val = self.minimax_value(new_state, depth - 1, alpha, beta, True)[1]
-            if val <= alpha:
-                return val, col
-            beta = min(beta, val)
-            if alpha >= beta:
-                break
-        return move, val
-
-    def max_value(self, state, depth, alpha, beta):
-        player = self.get_player_num()
-        if player == 1:
-            opponent = 2
-        else:
-            opponent = 1
-
-        if depth == 0 or self.is_terminal_node(state, opponent) or self.is_terminal_node(state, player):
-            if self.is_winning_move(state, player):
-                return None, 9999
-            elif self.is_winning_move(state, opponent):
-                return None, -9999
-            else:
-                return None, 0
-
-        val = -np.inf
-        valid_cols = self.get_valid_cols(state)
-        move = random.choice(valid_cols)
-        for col in valid_cols:
-            row = self.get_row(state, col, player)
-            new_state = state.copy()
-            new_state[row][col] = player
-            val = self.minimax_value(new_state, depth - 1, alpha, beta, False)[1]
-            if val >= beta:
-                return val, col
-            alpha = max(alpha, val)
-            if alpha >= beta:
-                break
-        return move, val
-
-    def minimax_value(self, state, depth, alpha, beta, is_max_player):
-        if is_max_player:
-            return self.max_value(state, depth, alpha, beta)
-        else:
-            return self.min_value(state, depth, alpha, beta)
-
-    def expectimax_min_value(self, state, depth, alpha, beta):
-        player = self.get_player_num()
-        if player == 1:
-            opponent = 2
-        else:
-            opponent = 1
-
-        if depth == 0 or self.is_terminal_node(state, opponent) or self.is_terminal_node(state, player):
-            if self.is_winning_move(state, opponent):
-                return None, 9999
-            elif self.is_winning_move(state, player):
-                return None, -9999
-            else:
-                return None, 0
-
-        val = 0
-        valid_cols = self.get_valid_cols(state)
-        move = random.choice(valid_cols)
-        for col in valid_cols:
-            row = self.get_row(state, col, opponent)
-            new_state = state.copy()
-            new_state[row][col] = opponent
-            prob = 1 / len(valid_cols)
-
-            val = self.minimax_value(new_state, depth - 1, alpha, beta, True)[1] * prob
-            if val <= alpha:
-                return val, col
-            beta = min(beta, val)
-            if alpha >= beta:
-                break
-        return move, val
-
-    def expectimax_value(self, state, depth, alpha, beta, is_max_player):
-        if is_max_player:
-            return self.max_value(state, depth, alpha, beta)
-        else:
-            return self.expectimax_min_value(state, depth, alpha, beta)
+            return 1
 
     def get_valid_cols(self, board):
         """
@@ -214,107 +367,26 @@ class AIPlayer:
             cols: Valid columns to drop new pieces into
 
         """
-        cols = []
-        for i, col in enumerate(board.T):
-            if 0 in col:
-                cols.append(i)
+        valid_cols = []
+        for col in range(board.shape[1]):
+            if 0 in board[:, col]:
+                valid_cols.append(col)
 
-        return cols
+        return valid_cols
 
-    def is_winning_move(self, board, player):
+    def get_valid_row(self, board, col):
         """
-        Local estimator of whether this move is the
-        one that will win player the game or not.
-        Intentional written differently from the
-        game_complete function in ConnectFour.py
-        to mimic human thinking behaviour
+        Simulates the piece dropping down into the board
         Args:
-            board: The game board
-            player: The player playing when function
-            is called
+            board: A freeze-frame of the game board
+            col: The column to drop game piece into
 
         Returns:
-            a boolean value of whether player given
-            will be making a winning move or not
-
-        """
-        # Check for horizontal wins
-        for c in range(COLUMN_MAX - 3):
-            for r in range(ROW_MAX):
-                if board[r][c] == player \
-                        and board[r][c + 1] == player \
-                        and board[r][c + 2] == player \
-                        and board[r][c + 3] == player:
-                    return True
-        # Check for vertical wins
-        for c in range(COLUMN_MAX):
-            for r in range(ROW_MAX - 3):
-                if board[r][c] == player \
-                        and board[r + 1][c] == player \
-                        and board[r + 2][c] == player \
-                        and board[r + 3][c] == player:
-                    return True
-        # Check for ↗ wins
-        for c in range(COLUMN_MAX - 3):
-            for r in range(ROW_MAX - 3):
-                if board[r][c] == player \
-                        and board[r + 1][c + 1] == player \
-                        and board[r + 2][c + 2] == player \
-                        and board[r + 3][c + 3] == player:
-                    return True
-        # Check for ↘ wins
-        for c in range(COLUMN_MAX - 3):
-            for r in range(ROW_MAX - 3):
-                if board[r][c] == player \
-                        and board[r - 1][c + 1] == player \
-                        and board[r - 2][c + 2] == player \
-                        and board[r - 3][c + 3] == player:
-                    return True
-
-    def is_terminal_node(self, board, player):
-        """
-        Is the last node of branch. No more successors.
-        Args:
-            board: The game board
-            player: The player playing when function
-            is called
-
-        Returns:
-            a boolean value of whether this node
-            has further successors
-        """
-        return self.is_winning_move(board, player) or len(self.get_valid_cols(board)) == 0
-
-    def get_row(self, board, col, player):
-        """
-        Simulate a piece dropping into the board
-        Args:
-            board: The game board
-            col: Column to drop piece into
-            player: The player dropping the piece
-
-        Returns:
-            The row number this dropped piece will end up
+            The row which the piece will end up on
         """
         for row in range(0, 6, 1):
             if board[row][col] == 0:
                 return row
-
-        return None
-
-    def eval_frame(self, state, player, opponent):
-        score = 0
-        if self.is_winning_move(state, player):
-            score += 10000
-        if state.count(player) == 4:
-            score += 3000
-        elif state.count(player) == 3 and state.count(0) == 1:
-            score += 1500
-        elif state.count(player) == 2 and state.count(0) == 2:
-            score += 1000
-        if state.count(opponent) == 3 and state.count(0) == 1:
-            score -= 2000
-        return score
 
 
 class RandomPlayer:

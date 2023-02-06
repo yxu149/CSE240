@@ -3,7 +3,7 @@ import random
 import numpy as np
 
 # Global Constants
-MAX_DEPTH = 5
+MAX_DEPTH = 30
 
 
 class AIPlayer:

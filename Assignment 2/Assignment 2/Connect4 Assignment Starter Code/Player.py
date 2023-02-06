@@ -124,7 +124,7 @@ class AIPlayer:
             max_val = self.alphabeta_max_value(frame, alpha, beta, player, opponent, depth)
             min_val = min(min_val, max_val)
 
-            if min_val >= alpha:
+            if min_val <= alpha:
                 return min_val
 
             beta = min(min_val, beta)
@@ -290,14 +290,14 @@ class AIPlayer:
                 frame = col_arr[row:row+4]
                 score += self.eval_frame(frame, player, opponent)
         # Check for ↗ wins
-        for row in range(3, 6):
+        for row in range(0, 6-3):
             for col in range(0, 7-3):
-                frame = [board[row-i][col+i] for i in range(4)]
+                frame = [board[row+i][col+i] for i in range(4)]
                 score += self.eval_frame(frame, player, opponent)
         # Check for ↘ wins
-        for row in range(3, 6):
-            for col in range(0, 7):
-                frame = [board[row-i][col-i] for i in range(4)]
+        for row in range(0, 6-3):
+            for col in range(0, 7-3):
+                frame = [board[row+3-i][col+1] for i in range(4)]
                 score += self.eval_frame(frame, player, opponent)
 
         #print("Score", score)

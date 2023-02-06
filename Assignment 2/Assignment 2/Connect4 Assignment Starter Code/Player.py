@@ -68,9 +68,9 @@ class AIPlayer:
 
     def evaluation_function(self, board):
         """
-        Given the current stat of the board, return the scalar value that 
+        Given the current stat of the board, return the scalar value that
         represents the evaluation function for the current player
-       
+
         INPUTS:
         board - a numpy array containing the state of the board using the
                 following encoding:
@@ -99,106 +99,109 @@ class AIPlayer:
     def get_player_num(self):
         return self.player_number
 
-    def minimax_value(self, state, depth, alpha, beta, is_max_player):
+    def min_value(self, state, depth, alpha, beta):
         player = self.get_player_num()
         if player == 1:
             opponent = 2
         else:
             opponent = 1
 
-        if depth == 0 or self.is_terminal_node(state, player) or self.is_terminal_node(state, opponent):
-            if self.is_terminal_node(state, player) or self.is_terminal_node(state, opponent):
-                if self.is_winning_move(state, player):
-                    return None, 9999
-                elif self.is_winning_move(state, opponent):
-                    return None, -9999
-                else:
-                    return None, 0
+        if depth == 0 or self.is_terminal_node(state, opponent) or self.is_terminal_node(state, player):
+            if self.is_winning_move(state, opponent):
+                return None, 9999
+            elif self.is_winning_move(state, player):
+                return None, -9999
+            else:
+                return None, 0
 
-        if is_max_player:
-            val = -np.inf
-            valid_cols = self.get_valid_cols(state)
-            move = random.choice(valid_cols)
-            for col in valid_cols:
-                row = self.get_row(state, col, player)
-                new_state = state.copy()
-                new_state[row][col] = player
-                new_val = self.minimax_value(new_state, depth - 1, alpha, beta, False)[1]
-                if new_val > val:
-                    val = new_val
-                    move = col
-                alpha = max(alpha, val)
-                if alpha >= beta:
-                    break
-            return move, val
+        val = np.inf
+        valid_cols = self.get_valid_cols(state)
+        move = random.choice(valid_cols)
+        for col in valid_cols:
+            row = self.get_row(state, col, opponent)
+            new_state = state.copy()
+            new_state[row][col] = opponent
+            val = self.minimax_value(new_state, depth - 1, alpha, beta, True)[1]
+            if val <= alpha:
+                return val, col
+            beta = min(beta, val)
+            if alpha >= beta:
+                break
+        return move, val
+
+    def max_value(self, state, depth, alpha, beta):
+        player = self.get_player_num()
+        if player == 1:
+            opponent = 2
         else:
-            val = np.inf
-            valid_cols = self.get_valid_cols(state)
-            move = random.choice(valid_cols)
-            for col in valid_cols:
-                row = self.get_row(state, col, opponent)
-                new_state = state.copy()
-                new_state[row][col] = opponent
-                new_val = self.minimax_value(new_state, depth - 1, alpha, beta, True)[1]
-                if new_val < val:
-                    val = new_val
-                    move = col
-                beta = min(beta, val)
-                if alpha >= beta:
-                    break
-            return move, val
+            opponent = 1
+
+        if depth == 0 or self.is_terminal_node(state, opponent) or self.is_terminal_node(state, player):
+            if self.is_winning_move(state, player):
+                return None, 9999
+            elif self.is_winning_move(state, opponent):
+                return None, -9999
+            else:
+                return None, 0
+
+        val = -np.inf
+        valid_cols = self.get_valid_cols(state)
+        move = random.choice(valid_cols)
+        for col in valid_cols:
+            row = self.get_row(state, col, player)
+            new_state = state.copy()
+            new_state[row][col] = player
+            val = self.minimax_value(new_state, depth - 1, alpha, beta, False)[1]
+            if val >= beta:
+                return val, col
+            alpha = max(alpha, val)
+            if alpha >= beta:
+                break
+        return move, val
+
+    def minimax_value(self, state, depth, alpha, beta, is_max_player):
+        if is_max_player:
+            return self.max_value(state, depth, alpha, beta)
+        else:
+            return self.min_value(state, depth, alpha, beta)
+
+    def expectimax_min_value(self, state, depth, alpha, beta):
+        player = self.get_player_num()
+        if player == 1:
+            opponent = 2
+        else:
+            opponent = 1
+
+        if depth == 0 or self.is_terminal_node(state, opponent) or self.is_terminal_node(state, player):
+            if self.is_winning_move(state, opponent):
+                return None, 9999
+            elif self.is_winning_move(state, player):
+                return None, -9999
+            else:
+                return None, 0
+
+        val = 0
+        valid_cols = self.get_valid_cols(state)
+        move = random.choice(valid_cols)
+        for col in valid_cols:
+            row = self.get_row(state, col, opponent)
+            new_state = state.copy()
+            new_state[row][col] = opponent
+            prob = 1 / len(valid_cols)
+
+            val = self.minimax_value(new_state, depth - 1, alpha, beta, True)[1] * prob
+            if val <= alpha:
+                return val, col
+            beta = min(beta, val)
+            if alpha >= beta:
+                break
+        return move, val
 
     def expectimax_value(self, state, depth, alpha, beta, is_max_player):
-        player = self.get_player_num()
-        if player == 1:
-            opponent = 2
-        else:
-            opponent = 1
-
-        if depth == 0 or self.is_terminal_node(state, player) or self.is_terminal_node(state, opponent):
-            if self.is_terminal_node(state, player) or self.is_terminal_node(state, opponent):
-                if self.is_winning_move(state, player):
-                    return None, 9999
-                elif self.is_winning_move(state, opponent):
-                    return None, -9999
-                else:
-                    return None, 0
-
         if is_max_player:
-            val = -np.inf
-            valid_cols = self.get_valid_cols(state)
-            move = random.choice(valid_cols)
-            for col in valid_cols:
-                row = self.get_row(state, col, player)
-                new_state = state.copy()
-                new_state[row][col] = player
-                new_val = self.minimax_value(new_state, depth - 1, alpha, beta, False)[1]
-                if new_val > val:
-                    val = new_val
-                    move = col
-                alpha = max(alpha, val)
-                if alpha >= beta:
-                    break
-            return move, val
+            return self.max_value(state, depth, alpha, beta)
         else:
-            val = 0
-            valid_cols = self.get_valid_cols(state)
-            move = random.choice(valid_cols)
-            for col in valid_cols:
-                row = self.get_row(state, col, opponent)
-                new_state = state.copy()
-                new_state[row][col] = opponent
-                prob = 1/len(valid_cols)
-
-                new_val = self.minimax_value(new_state, depth - 1, alpha, beta, True)[1] * prob
-                if new_val < val:
-                    val = new_val
-                    move = col
-                beta = min(beta, val)
-                if alpha >= beta:
-                    break
-            return move, val
-
+            return self.expectimax_min_value(state, depth, alpha, beta)
 
     def get_valid_cols(self, board):
         """
@@ -293,8 +296,8 @@ class AIPlayer:
         Returns:
             The row number this dropped piece will end up
         """
-        for row in range(0, 6, 1): 
-            if board[row][col] == 0: 
+        for row in range(0, 6, 1):
+            if board[row][col] == 0:
                 return row
 
         return None
